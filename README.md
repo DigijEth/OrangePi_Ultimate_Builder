@@ -1,3 +1,167 @@
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/digijeth/orangepi5plus-builder.git
+cd orangepi5plus-builder
+
+# Run the installer
+sudo ./installer.sh
+
+# Build your first image
+sudo builder
+```
+
+## Building from Source
+
+### Prerequisites
+
+Before building, ensure you have the basic development tools installed:
+
+```bash
+sudo apt update
+sudo apt install build-essential git make
+```
+
+### Build Instructions
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/digijeth/orangepi5plus-builder.git
+   cd orangepi5plus-builder
+   ```
+
+2. **Create the .env file for GitHub authentication**
+   ```bash
+   cp .env.template .env
+   # Edit .env and add your GitHub token
+   nano .env
+   ```
+
+3. **Build the application**
+   ```bash
+   # Clean any previous builds
+   make clean
+   
+   # Build with debug support (recommended for development)
+   make debug
+   
+   # Or build release version (no debug features)
+   make release
+   ```
+
+4. **Install the builder**
+   ```bash
+   sudo make install
+   ```
+
+5. **Run the builder**
+   ```bash
+   # Normal execution
+   sudo builder
+   
+   # If you have filesystem mounting issues (e.g., in chroot/container)
+   sudo run-builder
+   ```
+
+### Alternative: Using the Installer Script
+
+The installer script automates the entire process:
+
+```bash
+# Make installer executable
+chmod +x installer.sh
+
+# Run installer (handles everything automatically)
+sudo ./installer.sh
+```
+
+The installer will:
+- Check and install all required dependencies
+- Set up debootstrap for newer Ubuntu releases
+- Build the application
+- Install it system-wide
+- Create necessary directories
+
+### Manual Build Process
+
+If you prefer to build manually without the scripts:
+
+```bash
+# 1. Install dependencies
+sudo apt install -y build-essential gcc git wget make bc bison flex \
+    libssl-dev libncurses-dev gcc-aarch64-linux-gnu device-tree-compiler \
+    debootstrap qemu-user-static rsync parted dosfstools e2fsprogs
+
+# 2. Set up debootstrap for newer Ubuntu (if needed)
+sudo ln -sf /usr/share/debootstrap/scripts/jammy /usr/share/debootstrap/scripts/plucky
+sudo ln -sf /usr/share/debootstrap/scripts/jammy /usr/share/debootstrap/scripts/vivid
+
+# 3. Compile the builder
+gcc -o builder builder.c src/system.c src/kernel.c src/gpu.c src/ui.c \
+    -Wall -Wextra -O2 -D_GNU_SOURCE -I. -Imodules -lpthread
+
+# 4. Install manually
+sudo cp builder /usr/local/bin/
+sudo chmod +x /usr/local/bin/builder
+
+# 5. Run
+sudo builder
+```
+
+### Makefile Targets
+
+The Makefile provides several useful targets:
+
+```bash
+make              # Build release version
+make debug        # Build with debug features
+make release      # Build without debug features
+make clean        # Remove all build artifacts
+make install      # Install system-wide
+make uninstall    # Remove from system
+make help         # Show all available targets
+```
+
+### Build Output
+
+After building, you'll have:
+- `builder` - The main executable
+- `run-builder` - Wrapper script for filesystem mounting
+- Object files in the source directories (removed by `make clean`)
+
+### Troubleshooting Build Issues
+
+1. **Missing dependencies**
+   ```bash
+   # The installer script will handle this automatically, or:
+   sudo apt install build-essential
+   ```
+
+2. **Permission errors**
+   ```bash
+   # Always use sudo for install/uninstall
+   sudo make install
+   ```
+
+3. **Build failures**
+   ```bash
+   # Clean and rebuild
+   make clean
+   make debug
+   ```
+
+4. **/proc not mounted errors**
+   ```bash
+   # Use the wrapper script
+   sudo run-builder
+   # Or mount manually
+   sudo mount -t proc /proc /proc
+   ```
+
+
+
+
 # Orange Pi 5 Plus Ultimate Interactive Builder
 
 **Version: 0.1.0a**  
