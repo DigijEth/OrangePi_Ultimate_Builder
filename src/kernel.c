@@ -43,11 +43,42 @@ int download_kernel_source(build_config_t *config) {
     // First approach: Try the Orange Pi specific repository
     LOG_INFO("Trying to download Orange Pi kernel source...");
     
-    auth_url = add_github_token_to_url("https://github.com/orangepi-xunlong/linux.git");
-    snprintf(cmd, sizeof(cmd), 
-             "git clone --depth 1 %s -b orange-pi-5.10-rk3588 linux_temp", auth_url);
+    // For Orange Pi repository, try different authentication methods
+    const char* orangepi_urls[] = {
+        "https://github.com/orangepi-xunlong/linux.git",
+        "https://github.com/orangepi-xunlong/linux-orangepi.git",
+        NULL
+    };
     
-    if (execute_command_with_retry(cmd, 1, 2) == 0) {
+    int success = 0;
+    for (int i = 0; orangepi_urls[i] != NULL && !success; i++) {
+        auth_url = add_github_token_to_url(orangepi_urls[i]);
+        
+        // Try with depth 1 first for faster clone
+        snprintf(cmd, sizeof(cmd), 
+                 "git clone --depth 1 \"%s\" -b orange-pi-5.10-rk3588 linux_temp 2>&1", auth_url);
+        
+        LOG_INFO("Attempting to clone from:");
+        LOG_INFO(orangepi_urls[i]);
+        
+        if (execute_command_with_retry(cmd, 1, 2) == 0) {
+            success = 1;
+        } else {
+            // Try without branch specification
+            snprintf(cmd, sizeof(cmd), 
+                     "git clone --depth 1 \"%s\" linux_temp 2>&1", auth_url);
+            
+            if (execute_command_with_retry(cmd, 1, 1) == 0) {
+                success = 1;
+            }
+        }
+        
+        if (!success) {
+            execute_command_safe("rm -rf linux_temp", 0, &error_ctx);
+        }
+    }
+    
+    if (success) {
         LOG_INFO("Successfully downloaded Orange Pi kernel source");
         
         // Move the contents to the final location
@@ -858,7 +889,7 @@ int build_ubuntu_rootfs(build_config_t *config) {
     // Success - now unmount filesystems
     LOG_INFO("Ubuntu root filesystem created successfully");
     
-	cleanup_mounts:
+cleanup_mounts:
     // Cleanup - unmount filesystems in reverse order
     LOG_INFO("Unmounting chroot filesystems...");
     
