@@ -4,7 +4,7 @@
 **License: GPLv3**  
 **Author: Setec Labs**
 
-A comprehensive, interactive tool for building custom Ubuntu distributions for the Orange Pi 5 Plus single-board computer with full Mali G610 GPU support.
+A comprehensive, interactive tool for building custom Ubuntu distributions for the Orange Pi 5 Plus single-board computer with full Mali G610 GPU support. Support for other boards coming soon.
 
 ## Table of Contents
 
