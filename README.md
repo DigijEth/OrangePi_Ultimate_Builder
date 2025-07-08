@@ -608,7 +608,7 @@ sudo ./debootstrap.sh
 - Downloads and installs hundreds of packages
 - Builds U-Boot and creates the final image
 
-Total time: 30-90 minutes depending on your system and internet speed.
+Total time: 30-120 minutes depending on your system and internet speed.
 
 ### Q: Can I use this builder in a Docker container?
 
