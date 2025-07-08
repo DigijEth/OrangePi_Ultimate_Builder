@@ -80,32 +80,58 @@ char* get_github_token(void) {
     // Check .env file
     FILE* env_file = fopen(ENV_FILE, "r");
     if (env_file != NULL) {
-        char line[GITHUB_TOKEN_MAX_LEN + 50] = {0};
-        char key[50] = {0};
-        char value[GITHUB_TOKEN_MAX_LEN + 1] = {0};
+        char line[GITHUB_TOKEN_MAX_LEN + 100] = {0};
         
         while (fgets(line, sizeof(line), env_file) != NULL) {
             // Skip comments and empty lines
-            if (line[0] == '#' || line[0] == '\n') {
+            if (line[0] == '#' || line[0] == '\n' || line[0] == '\r') {
                 continue;
             }
             
-            // Parse key=value
-            if (sscanf(line, "%49[^=]=%255s", key, value) == 2) {
-                // Remove quotes if present
-                size_t len = strlen(value);
-                if (len >= 2 && ((value[0] == '"' && value[len-1] == '"') || 
-                                 (value[0] == '\'' && value[len-1] == '\''))) {
-                    memmove(value, value + 1, len - 2);
-                    value[len - 2] = '\0';
-                }
-                
-                // Check if this is the GitHub token
-                if (strcmp(key, GITHUB_TOKEN_ENV) == 0) {
-                    strncpy(token, value, GITHUB_TOKEN_MAX_LEN);
+            // Remove leading whitespace
+            char* line_start = line;
+            while (*line_start == ' ' || *line_start == '\t') {
+                line_start++;
+            }
+            
+            // Check if this line contains GITHUB_TOKEN
+            if (strncmp(line_start, GITHUB_TOKEN_ENV, strlen(GITHUB_TOKEN_ENV)) == 0) {
+                char* equals = strchr(line_start, '=');
+                if (equals != NULL) {
+                    char* value_start = equals + 1;
+                    
+                    // Skip whitespace after =
+                    while (*value_start == ' ' || *value_start == '\t') {
+                        value_start++;
+                    }
+                    
+                    // Copy the token
+                    strncpy(token, value_start, GITHUB_TOKEN_MAX_LEN);
                     token[GITHUB_TOKEN_MAX_LEN] = '\0';
+                    
+                    // Remove trailing whitespace and newlines
+                    size_t len = strlen(token);
+                    while (len > 0 && (token[len-1] == '\n' || token[len-1] == '\r' || 
+                                       token[len-1] == ' ' || token[len-1] == '\t')) {
+                        token[len-1] = '\0';
+                        len--;
+                    }
+                    
+                    // Remove quotes if present
+                    if (len >= 2) {
+                        if ((token[0] == '"' && token[len-1] == '"') || 
+                            (token[0] == '\'' && token[len-1] == '\'')) {
+                            memmove(token, token + 1, len - 2);
+                            token[len - 2] = '\0';
+                        }
+                    }
+                    
                     fclose(env_file);
-                    return token;
+                    
+                    // Validate we got something
+                    if (strlen(token) > 0) {
+                        return token;
+                    }
                 }
             }
         }
@@ -121,15 +147,25 @@ char* add_github_token_to_url(const char* url) {
     char* token = get_github_token();
     
     // If no token or not a GitHub URL, return original URL
-    if (token == NULL || strstr(url, "github.com") == NULL) {
+    if (token == NULL || strlen(token) == 0 || strstr(url, "github.com") == NULL) {
         strncpy(auth_url, url, sizeof(auth_url) - 1);
         auth_url[sizeof(auth_url) - 1] = '\0';
         return auth_url;
     }
     
-    // Check if URL starts with https://
+    // For git clone operations, we need to use the token as the username with 'x-oauth-basic' as password
+    // or just the token as the username with empty password
     if (strncmp(url, "https://", 8) == 0) {
-        snprintf(auth_url, sizeof(auth_url), "https://%s@%s", token, url + 8);
+        // Extract the URL after https://
+        const char* url_after_protocol = url + 8;
+        
+        // Use the token as username (GitHub accepts this format)
+        snprintf(auth_url, sizeof(auth_url), "https://%s:x-oauth-basic@%s", token, url_after_protocol);
+        return auth_url;
+    } else if (strncmp(url, "git@github.com:", 16) == 0) {
+        // Convert SSH URL to HTTPS with authentication
+        const char* repo_path = url + 15; // Skip "git@github.com:"
+        snprintf(auth_url, sizeof(auth_url), "https://%s:x-oauth-basic@github.com/%s", token, repo_path);
         return auth_url;
     }
     
@@ -489,6 +525,35 @@ int setup_build_environment(void) {
     error_context_t error_ctx = {0};
     
     LOG_INFO("Setting up build environment...");
+    
+    // Configure git to use the GitHub token if available
+    char* token = get_github_token();
+    if (token != NULL && strlen(token) > 0) {
+        LOG_INFO("Configuring git to use GitHub token...");
+        
+        // Configure git to use the token for GitHub
+        char git_config_cmd[MAX_CMD_LEN];
+        
+        // Set up git credential helper to use the token
+        snprintf(git_config_cmd, sizeof(git_config_cmd), 
+                 "git config --global credential.helper '!f() { echo \"username=x-access-token\"; echo \"password=%s\"; }; f'", 
+                 token);
+        execute_command_safe(git_config_cmd, 0, &error_ctx);
+        
+        // Also set up the token for direct HTTPS URLs
+        snprintf(git_config_cmd, sizeof(git_config_cmd),
+                 "git config --global url.\"https://x-access-token:%s@github.com/\".insteadOf \"https://github.com/\"",
+                 token);
+        execute_command_safe(git_config_cmd, 0, &error_ctx);
+        
+        // And for git protocol URLs
+        snprintf(git_config_cmd, sizeof(git_config_cmd),
+                 "git config --global url.\"https://x-access-token:%s@github.com/\".insteadOf \"git@github.com:\"",
+                 token);
+        execute_command_safe(git_config_cmd, 0, &error_ctx);
+        
+        LOG_INFO("Git configured to use GitHub token for authentication");
+    }
     
     // Check if /proc is mounted
     if (access("/proc/self", F_OK) != 0) {
