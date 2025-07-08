@@ -1,0 +1,59 @@
+# Ignore object files generated during compilation
+*.o
+
+# Ignore environment variable files
+.env
+
+# Other common files to ignore in C projects (optional)
+# Executables
+*.exe
+*.out
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Compiled libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Ignore compiled files
+*.class
+*.jar
+
+# Ignore build directory
+/build/
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+tmp/
