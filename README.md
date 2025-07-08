@@ -1,4 +1,4 @@
-
+Git just completly screwed the project up, I have to re build the last 8 or so hours worth of work. For some reason I have been having issues with git pushing my commits with out it being a nightmare, so I decided to try git desktop. Well all that did was cause it to download my repo and delete my source for the rest of the project. So right now the application will gather everything you need to get started building your own distro and place it in a folder, it wont build a custom firmware or linux .img.
 
 # Orange Pi 5 Plus Ultimate Interactive Builder
 
