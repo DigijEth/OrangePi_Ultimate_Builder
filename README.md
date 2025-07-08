@@ -57,7 +57,7 @@ A comprehensive, interactive tool for building custom Ubuntu distributions for t
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/orangepi5plus-builder.git
+git clone https://github.com/digijeth/orangepi5plus-builder.git
 cd orangepi5plus-builder
 
 # Run the installer
