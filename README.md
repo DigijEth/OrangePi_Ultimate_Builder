@@ -2,7 +2,7 @@ Github Desktop is the worst application ever. It has deleted over 30 hours of wo
 
 This project has been scrapped becuse all my hard work was auto over written multiple times by days old code. Everytime I tried to push it said my repo was out of date and I had to pull before I could push (due to manual updates to the readme.md). 
 
-A new project is being released to my repo today.
+A new project is being released to my repo today using my GitSolo manager. Follow that one, it is much more advanced anyways.
 
 
 
